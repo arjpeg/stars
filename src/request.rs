@@ -23,8 +23,8 @@ impl Request {
             .split_whitespace()
             .collect::<Vec<_>>();
 
-        let verb = request_line.get(0).unwrap();
-        let path = request_line.get(1).unwrap();
+        let verb = *request_line.get(0).unwrap();
+        let path = *request_line.get(1).unwrap();
 
         let method = Method::try_from((verb, path)).unwrap();
 

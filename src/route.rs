@@ -53,14 +53,14 @@ pub enum MethodKind {
     GET,
 }
 
-impl TryFrom<(&&str, &&str)> for Method {
+impl TryFrom<(&str, &str)> for Method {
     type Error = ();
 
-    fn try_from(value: (&&str, &&str)) -> Result<Self, Self::Error> {
+    fn try_from(value: (&str, &str)) -> Result<Self, Self::Error> {
         let (verb, path) = value;
 
         let method = match verb {
-            &"GET" => MethodKind::GET,
+            "GET" => MethodKind::GET,
             _ => return Err(()),
         };
 
