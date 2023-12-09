@@ -4,7 +4,9 @@ use std::{collections::HashMap, fmt::Display};
 #[macro_export]
 macro_rules! render {
     ($path:literal) => {{
+        // Check if the file exists
         let content = include_str!($path);
+        use std::collections::HashMap;
 
         $crate::response::Response {
             status_code: $crate::response::StatusCode::OK,

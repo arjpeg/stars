@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::request::Request;
+use crate::{request::Request, response::Response};
 
 /// Helper macro to create a new route.
 #[macro_export]
@@ -22,7 +22,7 @@ macro_rules! route {
 /// Contains a path and a handler function.
 pub struct Route {
     pub method: Method,
-    pub handler: Box<dyn Fn(Request) -> ()>,
+    pub handler: Box<dyn Fn(Request) -> Response>,
 }
 
 impl Debug for Route {
@@ -34,7 +34,7 @@ impl Debug for Route {
 }
 
 impl Route {
-    pub fn new(method: Method, handler: fn(Request)) -> Route {
+    pub fn new(method: Method, handler: fn(Request) -> Response) -> Route {
         Route {
             method,
             handler: Box::new(handler),

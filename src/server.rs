@@ -1,15 +1,9 @@
 use std::{
-    collections::HashMap,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
 };
 
-use crate::{
-    render,
-    request::Request,
-    response::{Response, ResponseBody, StatusCode},
-    route::{Method, Route},
-};
+use crate::{render, request::Request, response::Response, route::Route};
 
 /// A struct that contains the server tcp listener and the routes.
 pub struct Server {
@@ -71,23 +65,13 @@ impl Server {
             .find(|route| route.method == request.method);
 
         let response: Response = match route {
-            Some(route) => {
-                (route.handler)(request);
-                todo!();
-            }
-            None => {
-                println!("No route found!");
-                render!("../404.html")
-            }
+            Some(route) => (route.handler)(request),
+            None => render!("../404.html"),
         };
 
         let content: String = response.body.into();
         let length = content.len();
 
-        // let response = format!(
-        //     "HTTP/1.1 {}\r\nContent-Length: {length}\r\n\r\n{content}",
-        //     response.status_code,
-        // );
         let mut response_str = String::new();
 
         response_str.push_str(&format!("HTTP/1.1 {}\r\n", response.status_code));
@@ -101,38 +85,6 @@ impl Server {
         response_str.push_str(&content);
 
         stream.write_all(response_str.as_bytes()).unwrap();
-
-        // let content = "deez nuts lmao";
-        // let length = content.len();
-        // let status_line = "HTTP/1.1 200 OK";
-
-        // let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
-
-        // println!("{}", response);
-
-        // stream.write_all(response.as_bytes()).unwrap();
-
-        // &self
-        //     .routes
-        //     .iter()
-        //     .find(|route| Method::from((verb, path)).unwrap() == route.method);
-
-        //     let (status_line, filename) = if verb == "GET" {
-        //         match path {
-        //             "/" => ("HTTP/1.1 200 OK", "index.html"),
-
-        //             _ => ("HTTP/1.1 404 NOT FOUND", "404.html"),
-        //         }
-        //     } else {
-        //         ("HTTP/1.1 404 NOT FOUND", "404.html")
-        //     };
-
-        //     let content = fs::read_to_string(filename).unwrap();
-        //     let length = content.len();
-
-        //     let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
-
-        //     stream.write(response.as_bytes()).unwrap();
     }
 }
 
