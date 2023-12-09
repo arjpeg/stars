@@ -4,12 +4,17 @@ use std::{collections::HashMap, fmt::Display};
 #[macro_export]
 macro_rules! render {
     ($path:literal) => {{
-        // Check if the file exists
+        render!($path, $crate::response::StatusCode::OK)
+    }};
+
+    ($path:literal, $status_code:expr) => {{
         let content = include_str!($path);
         use std::collections::HashMap;
 
+        let status_code: $crate::response::StatusCode = $status_code.into();
+
         $crate::response::Response {
-            status_code: $crate::response::StatusCode::OK,
+            status_code,
             headers: {
                 let mut headers = HashMap::new();
 
@@ -18,6 +23,27 @@ macro_rules! render {
                 headers
             },
             body: $crate::response::ResponseBody::Text(content.to_string()),
+        }
+    }};
+}
+
+/// Helper macro to render a json response.
+#[macro_export]
+macro_rules! render_json {
+    ($json:expr) => {{
+        // Use the json crate to serialize the json
+        let json = serde_json::to_string(&$json).unwrap();
+
+        $crate::response::Response {
+            status_code: $crate::response::StatusCode::OK,
+            headers: {
+                let mut headers = HashMap::new();
+
+                headers.insert("Content-Type".to_string(), "application/json".to_string());
+
+                headers
+            },
+            body: $crate::response::ResponseBody::Json(json),
         }
     }};
 }
@@ -55,11 +81,21 @@ pub enum StatusCode {
     NotFound,
 }
 
+impl From<usize> for StatusCode {
+    fn from(code: usize) -> Self {
+        match code {
+            200 => Self::OK,
+            404 => Self::NotFound,
+            _ => Self::NotFound,
+        }
+    }
+}
+
 impl Display for StatusCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let code = match self {
             StatusCode::OK => "200 OK",
-            StatusCode::NotFound => "404",
+            StatusCode::NotFound => "404 NOT FOUND",
         };
 
         write!(f, "{}", code)
@@ -70,6 +106,7 @@ impl Display for StatusCode {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResponseBody {
     Text(String),
+    Json(String),
 }
 
 impl From<String> for ResponseBody {
@@ -82,6 +119,7 @@ impl From<ResponseBody> for String {
     fn from(body: ResponseBody) -> Self {
         match body {
             ResponseBody::Text(text) => text,
+            ResponseBody::Json(json) => json,
         }
     }
 }

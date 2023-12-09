@@ -1,14 +1,25 @@
 use std::{
+    collections::HashMap,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
 };
 
-use crate::{render, request::Request, response::Response, route::Route};
+use crate::{
+    render,
+    request::Request,
+    response::{Response, ResponseBody, StatusCode},
+    route::Route,
+};
 
 /// A struct that contains the server tcp listener and the routes.
 pub struct Server {
+    /// The server's tcp listener.
+    /// Used to accept incoming connections.
     listener: TcpListener,
+    /// All of the registered routes.
     routes: Vec<Route>,
+    /// The 404 page.
+    not_found: Option<Route>,
 }
 
 impl Server {
@@ -17,7 +28,13 @@ impl Server {
         Self {
             listener,
             routes: Vec::new(),
+            not_found: None,
         }
+    }
+
+    /// Registers a 404 page.
+    pub fn register_not_found(&mut self, route: Route) {
+        self.not_found = Some(route);
     }
 
     /// Registers a new route.
@@ -46,18 +63,6 @@ impl Server {
             .take_while(|line| !line.is_empty())
             .collect::<Vec<_>>();
 
-        // let content = "deez nuts lmao 12353";
-        // let length = content.len();
-        // let status_line = "HTTP/1.1 200 OK";
-
-        // let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
-
-        // println!("{}", response);
-
-        // stream.write_all(response.as_bytes()).unwrap();
-
-        // dbg!(&full_request);
-
         let request = Request::new(full_request);
         let route = self
             .routes
@@ -66,7 +71,14 @@ impl Server {
 
         let response: Response = match route {
             Some(route) => (route.handler)(request),
-            None => render!("../404.html"),
+            None => match &self.not_found {
+                Some(route) => (route.handler)(request),
+                None => Response {
+                    status_code: StatusCode::NotFound,
+                    headers: HashMap::new(),
+                    body: ResponseBody::Text("404 Not Found".to_string()),
+                },
+            },
         };
 
         let content: String = response.body.into();
