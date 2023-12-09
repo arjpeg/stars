@@ -1,4 +1,5 @@
 pub mod request;
+pub mod response;
 pub mod route;
 pub mod server;
 
@@ -24,8 +25,9 @@ fn main() {
         .try_into()
         .expect("Failed to create server instance");
 
-    server.register_route(route!(GET, "/", || {
+    server.register_route(route!(GET, "/", |req| {
         println!("Hello, world!");
+        println!("{:?}", req.method);
     }));
 
     server.run();

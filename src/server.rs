@@ -1,10 +1,13 @@
 use std::{
-    io::{BufRead, BufReader},
+    collections::HashMap,
+    io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
 };
 
 use crate::{
+    render,
     request::Request,
+    response::{Response, ResponseBody, StatusCode},
     route::{Method, Route},
 };
 
@@ -46,7 +49,20 @@ impl Server {
         let full_request = buf_reader
             .lines()
             .map(|line| line.unwrap())
+            .take_while(|line| !line.is_empty())
             .collect::<Vec<_>>();
+
+        // let content = "deez nuts lmao 12353";
+        // let length = content.len();
+        // let status_line = "HTTP/1.1 200 OK";
+
+        // let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
+
+        // println!("{}", response);
+
+        // stream.write_all(response.as_bytes()).unwrap();
+
+        // dbg!(&full_request);
 
         let request = Request::new(full_request);
         let route = self
@@ -54,10 +70,47 @@ impl Server {
             .iter()
             .find(|route| route.method == request.method);
 
-        match route {
-            Some(route) => (route.handler)(),
-            None => println!("No route found!"),
+        let response: Response = match route {
+            Some(route) => {
+                (route.handler)(request);
+                todo!();
+            }
+            None => {
+                println!("No route found!");
+                render!("../404.html")
+            }
         };
+
+        let content: String = response.body.into();
+        let length = content.len();
+
+        // let response = format!(
+        //     "HTTP/1.1 {}\r\nContent-Length: {length}\r\n\r\n{content}",
+        //     response.status_code,
+        // );
+        let mut response_str = String::new();
+
+        response_str.push_str(&format!("HTTP/1.1 {}\r\n", response.status_code));
+        response_str.push_str(&format!("Content-Length: {}\r\n", length));
+
+        for (name, value) in response.headers {
+            response_str.push_str(&format!("{}: {}\r\n", name, value));
+        }
+
+        response_str.push_str("\r\n");
+        response_str.push_str(&content);
+
+        stream.write_all(response_str.as_bytes()).unwrap();
+
+        // let content = "deez nuts lmao";
+        // let length = content.len();
+        // let status_line = "HTTP/1.1 200 OK";
+
+        // let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{content}");
+
+        // println!("{}", response);
+
+        // stream.write_all(response.as_bytes()).unwrap();
 
         // &self
         //     .routes
